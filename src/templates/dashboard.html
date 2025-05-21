@@ -1,0 +1,1299 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - TaskFlow{% endblock %}
+
+{% block content %}
+<style>
+    /* Root variables for consistent design */
+    :root {
+        /* Colors */
+        --primary: #4361ee;
+        --primary-light: #4895ef;
+        --primary-dark: #3a0ca3;
+        --secondary: #7209b7;
+        --accent: #f72585;
+        --success: #38b000;
+        --warning: #ffbe0b;
+        --danger: #e63946;
+        --info: #4cc9f0;
+        
+        /* Neutrals */
+        --white: #ffffff;
+        --gray-100: #f8f9fa;
+        --gray-200: #e9ecef;
+        --gray-300: #dee2e6;
+        --gray-400: #ced4da;
+        --gray-500: #adb5bd;
+        --gray-600: #6c757d;
+        --gray-700: #495057;
+        --gray-800: #343a40;
+        --gray-900: #212529;
+        --black: #000000;
+        
+        /* Spacing */
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 16px;
+        --spacing-lg: 24px;
+        --spacing-xl: 32px;
+        --spacing-xxl: 48px;
+        
+        /* Border radius */
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --radius-full: 9999px;
+    }
+    
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f5f7fa;
+        color: var(--gray-800);
+        line-height: 1.5;
+    }
+    
+    /* Layout */
+    .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+        width: 260px;
+        background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+        color: white;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+        z-index: 100;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar-header {
+        padding: var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .logo {
+        font-size: 24px;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    
+    .logo-icon {
+        margin-right: var(--spacing-sm);
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        background-color: white;
+        border-radius: var(--radius-sm);
+        position: relative;
+    }
+    
+    .logo-icon::before, .logo-icon::after {
+        content: '';
+        position: absolute;
+        background-color: var(--primary);
+    }
+    
+    .logo-icon::before {
+        width: 16px;
+        height: 2px;
+        top: 8px;
+        left: 4px;
+    }
+    
+    .logo-icon::after {
+        width: 12px;
+        height: 2px;
+        top: 14px;
+        left: 4px;
+    }
+    
+    .sidebar-toggle {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 20px;
+    }
+    
+    .sidebar-menu {
+        padding: var(--spacing-md);
+        list-style-type: none;
+    }
+    
+    .sidebar-item {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        padding: var(--spacing-md);
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        border-radius: var(--radius-md);
+        transition: all 0.2s ease;
+    }
+    
+    .sidebar-link:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: white;
+    }
+    
+    .sidebar-link.active {
+        background-color: rgba(255,255,255,0.2);
+        color: white;
+        font-weight: 500;
+    }
+    
+    .sidebar-icon {
+        margin-right: var(--spacing-md);
+        width: 20px;
+        text-align: center;
+    }
+    
+    .sidebar-divider {
+        height: 1px;
+        background-color: rgba(255,255,255,0.1);
+        margin: var(--spacing-md) 0;
+    }
+    
+    .sidebar-profile {
+        padding: var(--spacing-md);
+        border-top: 1px solid rgba(255,255,255,0.1);
+        margin-top: auto;
+    }
+    
+    .profile-info {
+        display: flex;
+        align-items: center;
+        padding: var(--spacing-md);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+        transition: background-color 0.2s ease;
+    }
+    
+    .profile-info:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+    
+    .profile-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-full);
+        background-color: var(--white);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 18px;
+        margin-right: var(--spacing-md);
+    }
+    
+    .profile-details {
+        flex: 1;
+    }
+    
+    .profile-name {
+        font-weight: 500;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .profile-email {
+        color: rgba(255,255,255,0.7);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 150px;
+    }
+    
+    .profile-menu {
+        display: none;
+        position: absolute;
+        bottom: 80px;
+        left: 20px;
+        right: 20px;
+        background-color: white;
+        border-radius: var(--radius-md);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        padding: var(--spacing-sm) 0;
+        z-index: 1000;
+    }
+    
+    .profile-menu.show {
+        display: block;
+    }
+    
+    .profile-menu-item {
+        padding: var(--spacing-md) var(--spacing-lg);
+        color: var(--gray-800);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    
+    .profile-menu-item:hover {
+        background-color: var(--gray-100);
+    }
+    
+    .profile-menu-item i {
+        margin-right: var(--spacing-md);
+        color: var(--gray-600);
+    }
+    
+    .profile-menu-divider {
+        height: 1px;
+        background-color: var(--gray-200);
+        margin: var(--spacing-sm) 0;
+    }
+    
+    /* Main content */
+    .main-content {
+        flex: 1;
+        margin-left: 260px;
+        padding: var(--spacing-lg);
+        transition: margin-left 0.3s ease;
+    }
+    
+    .main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .page-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+    
+    .welcome-message {
+        color: var(--gray-600);
+        margin-top: var(--spacing-xs);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: var(--spacing-md);
+    }
+    
+    /* Cards & Stats */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: var(--spacing-lg);
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .stat-card {
+        background-color: white;
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+    }
+    
+    .stat-icon {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 20px;
+    }
+    
+    .stat-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--gray-600);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .stat-description {
+        font-size: 13px;
+        color: var(--gray-600);
+    }
+    
+    .stat-card.total {
+        border-left: 4px solid var(--primary);
+    }
+    
+    .stat-card.pending {
+        border-left: 4px solid var(--warning);
+    }
+    
+    .stat-card.completed {
+        border-left: 4px solid var(--success);
+    }
+    
+    .stat-card.total .stat-icon {
+        background-color: var(--primary);
+    }
+    
+    .stat-card.pending .stat-icon {
+        background-color: var(--warning);
+    }
+    
+    .stat-card.completed .stat-icon {
+        background-color: var(--success);
+    }
+    
+    /* Progress section */
+    .progress-section {
+        background-color: white;
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        margin-bottom: var(--spacing-xl);
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--gray-800);
+    }
+    
+    .progress-container {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .progress-label {
+        font-size: 14px;
+        color: var(--gray-700);
+    }
+    
+    .progress-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-700);
+    }
+    
+    .progress-bar {
+        height: 10px;
+        background-color: var(--gray-200);
+        border-radius: var(--radius-full);
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        border-radius: var(--radius-full);
+        transition: width 0.5s ease;
+    }
+    
+    .progress-fill.success {
+        background-color: var(--success);
+    }
+    
+    .progress-fill.primary {
+        background-color: var(--primary);
+    }
+    
+    .progress-fill.warning {
+        background-color: var(--warning);
+    }
+    
+    .progress-legend {
+        display: flex;
+        justify-content: space-around;
+        margin-top: var(--spacing-md);
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        color: var(--gray-700);
+    }
+    
+    .legend-color {
+        width: 10px;
+        height: 10px;
+        border-radius: var(--radius-full);
+        margin-right: var(--spacing-sm);
+    }
+    
+    .legend-color.success {
+        background-color: var(--success);
+    }
+    
+    .legend-color.primary {
+        background-color: var(--primary);
+    }
+    
+    .legend-color.warning {
+        background-color: var(--warning);
+    }
+    
+    /* Tasks list */
+    .tasks-section {
+        background-color: white;
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+    }
+    
+    .task-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .task-filter {
+        display: flex;
+        align-items: center;
+    }
+    
+    .filter-button {
+        background-color: white;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .filter-button i {
+        margin-right: var(--spacing-sm);
+    }
+    
+    .task-list {
+        list-style-type: none;
+    }
+    
+    .task-item {
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-md);
+        background-color: white;
+        border: 1px solid var(--gray-200);
+        margin-bottom: var(--spacing-md);
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .task-item:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transform: translateY(-2px);
+    }
+    
+    .task-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: var(--radius-md) 0 0 var(--radius-md);
+    }
+    
+    .task-item.high-priority::before {
+        background-color: var(--danger);
+    }
+    
+    .task-item.medium-priority::before {
+        background-color: var(--warning);
+    }
+    
+    .task-item.low-priority::before {
+        background-color: var(--success);
+    }
+    
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .task-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--gray-800);
+        margin-right: var(--spacing-md);
+    }
+    
+    .task-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+    
+    .task-badge {
+        font-size: 12px;
+        padding: 2px var(--spacing-sm);
+        border-radius: var(--radius-full);
+        white-space: nowrap;
+    }
+    
+    .task-badge.status-pending {
+        background-color: rgba(255, 190, 11, 0.2);
+        color: #b78000;
+    }
+    
+    .task-badge.status-in-progress {
+        background-color: rgba(67, 97, 238, 0.2);
+        color: #2541b2;
+    }
+    
+    .task-badge.status-completed {
+        background-color: rgba(56, 176, 0, 0.2);
+        color: #216800;
+    }
+    
+    .task-badge.priority-high {
+        background-color: rgba(230, 57, 70, 0.2);
+        color: #a82f38;
+    }
+    
+    .task-badge.priority-medium {
+        background-color: rgba(255, 190, 11, 0.2);
+        color: #b78000;
+    }
+    
+    .task-badge.priority-low {
+        background-color: rgba(56, 176, 0, 0.2);
+        color: #216800;
+    }
+    
+    .task-badge.category {
+        background-color: rgba(76, 201, 240, 0.2);
+        color: #0e87af;
+    }
+    
+    .task-description {
+        color: var(--gray-700);
+        font-size: 14px;
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .task-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .task-due-date {
+        font-size: 13px;
+        color: var(--gray-600);
+        display: flex;
+        align-items: center;
+    }
+    
+    .task-due-date i {
+        margin-right: var(--spacing-xs);
+    }
+    
+    .overdue {
+        color: var(--danger);
+        font-weight: 500;
+    }
+    
+    .today {
+        color: var(--warning);
+        font-weight: 500;
+    }
+    
+    .task-actions {
+        display: flex;
+        gap: var(--spacing-xs);
+    }
+    
+    .task-btn {
+        background-color: white;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+    
+    .task-btn i {
+        margin-right: var(--spacing-xs);
+    }
+    
+    .task-btn:hover {
+        background-color: var(--gray-100);
+    }
+    
+    .task-btn.complete {
+        color: var(--success);
+        border-color: var(--success);
+    }
+    
+    .task-btn.complete:hover {
+        background-color: rgba(56, 176, 0, 0.1);
+    }
+    
+    .task-btn.edit {
+        color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    .task-btn.edit:hover {
+        background-color: rgba(67, 97, 238, 0.1);
+    }
+    
+    .task-btn.delete {
+        color: var(--danger);
+        border-color: var(--danger);
+    }
+    
+    .task-btn.delete:hover {
+        background-color: rgba(230, 57, 70, 0.1);
+    }
+    
+    .btn {
+        padding: var(--spacing-md) var(--spacing-lg);
+        border-radius: var(--radius-md);
+        font-weight: 500;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: none;
+    }
+    
+    .btn i {
+        margin-right: var(--spacing-sm);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.3);
+    }
+    
+    .btn-outline {
+        background-color: transparent;
+        border: 1px solid var(--gray-300);
+        color: var(--gray-700);
+    }
+    
+    .btn-outline:hover {
+        background-color: var(--gray-100);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: var(--spacing-xxl) 0;
+    }
+    
+    .empty-icon {
+        font-size: 48px;
+        color: var(--gray-400);
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .empty-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: var(--spacing-md);
+    }
+    
+    .empty-description {
+        color: var(--gray-600);
+        margin-bottom: var(--spacing-xl);
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 992px) {
+        .sidebar {
+            width: 220px;
+        }
+        
+        .main-content {
+            margin-left: 220px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .sidebar {
+            width: 0;
+            transform: translateX(-100%);
+        }
+        
+        .main-content {
+            margin-left: 0;
+        }
+        
+        .sidebar.open {
+            width: 260px;
+            transform: translateX(0);
+        }
+        
+        .mobile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        
+        .mobile-menu-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-700);
+        }
+        
+        .mobile-logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .task-header {
+            flex-direction: column;
+        }
+        
+        .task-badges {
+            margin-top: var(--spacing-sm);
+        }
+        
+        .task-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .task-actions {
+            margin-top: var(--spacing-md);
+        }
+    }
+    
+    /* Utility classes */
+    .hidden {
+        display: none;
+    }
+    
+    .visible-mobile {
+        display: none;
+    }
+    
+    @media (max-width: 768px) {
+        .visible-mobile {
+            display: block;
+        }
+        
+        .hidden-mobile {
+            display: none;
+        }
+    }
+</style>
+
+
+
+<!-- Mobile Header (visible on smaller screens) -->
+<div class="mobile-header visible-mobile">
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="mobile-logo">TaskFlow</div>
+    <div class="profile-avatar">
+        {{ current_user.username[0]|upper }}
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="logo">
+                <div class="logo-icon"></div>
+                TaskFlow
+            </a>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="sidebar-item">
+                <a href="{{ url_for('tasks.dashboard') }}" class="sidebar-link active">
+                    <span class="sidebar-icon"><i class="fas fa-home"></i></span>
+                    Dashboard
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('tasks.add_new_task') }}" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="fas fa-plus-circle"></i></span>
+                    Add Task
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ url_for('categories.list_categories') }}" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="fas fa-tags"></i></span>
+                    Categories
+                </a>
+            </li>
+            
+            <div class="sidebar-divider"></div>
+            
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="fas fa-chart-bar"></i></span>
+                    Analytics
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="#" class="sidebar-link">
+                    <span class="sidebar-icon"><i class="fas fa-cog"></i></span>
+                    Settings
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-profile">
+            <div class="profile-info" id="profileDropdown">
+                <div class="profile-avatar">
+                    {{ current_user.username[0]|upper }}
+                </div>
+                <div class="profile-details">
+                    <div class="profile-name">{{ current_user.username }}</div>
+                    <div class="profile-email">{{ current_user.email_id }}</div>
+                </div>
+            </div>
+            
+            <div class="profile-menu" id="profileMenu">
+                <a href="#" class="profile-menu-item">
+                    <i class="fas fa-user"></i> Profile
+                </a>
+                <a href="#" class="profile-menu-item">
+                    <i class="fas fa-bell"></i> Notifications
+                </a>
+                <div class="profile-menu-divider"></div>
+                <form action="{{ url_for('auth.logout') }}" method="post">
+                    <button type="submit" class="profile-menu-item" style="width:100%; text-align:left; background:none; border:none; cursor:pointer;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <div class="main-header">
+            <div>
+                <h1 class="page-title">Dashboard</h1>
+                <p class="welcome-message">Welcome back, {{ current_user.username }}!</p>
+            </div>
+            <div class="action-buttons">
+                <a href="{{ url_for('tasks.add_new_task') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Task
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="stats-container">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-title">Total Tasks</div>
+                <div class="stat-value">{{ tasks|length }}</div>
+                <div class="stat-description">All tasks in your workspace</div>
+            </div>
+            
+            <div class="stat-card pending">
+                <div class="stat-icon">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div class="stat-title">Pending Tasks</div>
+                <div class="stat-value">{{ tasks|selectattr('status', 'equalto', 'pending')|list|length }}</div>
+                <div class="stat-description">Tasks waiting to be completed</div>
+            </div>
+            
+            <div class="stat-card completed">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-title">Completed Tasks</div>
+                <div class="stat-value">{{ tasks|selectattr('status', 'equalto', 'completed')|list|length }}</div>
+                <div class="stat-description">Tasks you've finished</div>
+            </div>
+        </div>
+        
+        <!-- Progress Section -->
+        <div class="progress-section">
+            <div class="section-header">
+                <h2 class="section-title">Task Progress Overview</h2>
+            </div>
+            {% set total_tasks = tasks|length %}
+            {% set completed_tasks = tasks|selectattr('status', 'equalto', 'completed')|list|length %}
+            {% set in_progress_tasks = tasks|selectattr('status', 'equalto', 'in-progress')|list|length %}
+            {% set pending_tasks = tasks|selectattr('status', 'equalto', 'pending')|list|length %}
+            
+            {% if total_tasks > 0 %}
+                {% set completed_percent = (completed_tasks / total_tasks * 100)|round|int %}
+                {% set in_progress_percent = (in_progress_tasks / total_tasks * 100)|round|int %}
+                {% set pending_percent = (pending_tasks / total_tasks * 100)|round|int %}
+            {% else %}
+                {% set completed_percent = 0 %}
+                {% set in_progress_percent = 0 %}
+                {% set pending_percent = 0 %}
+            {% endif %}
+
+            <style>
+                /* Base progress bar styles */
+                .progress-fill { 
+                    position: relative;
+                    height: 100%;
+                    float: left;
+                }
+        
+
+                .progress-fill.success { 
+                    background-color: var(--success);
+                    min-width: 0;
+                }
+
+                .progress-fill.primary { 
+                    background-color: var(--primary);
+                    min-width: 0;
+                }
+
+                .progress-fill.warning { 
+                    background-color: var(--warning);
+                    min-width: 0;
+                }
+            </style>
+
+            <div class="progress-container" 
+                data-completed="{{ completed_percent|default(0) }}"
+                data-in-progress="{{ in_progress_percent|default(0) }}"
+                data-pending="{{ pending_percent|default(0) }}">
+                
+                <div class="progress-header">
+                    <div class="progress-label">Overall Progress</div>
+                    <div class="progress-value" id="completed-percentage">0% Complete</div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill success" id="completed-progress"></div>
+                    <div class="progress-fill primary" id="inprogress-progress"></div>
+                    <div class="progress-fill warning" id="pending-progress"></div>
+                </div>
+            </div>
+            
+            <div class="progress-legend">
+                <div class="legend-item">
+                    <div class="legend-color success"></div>
+                    <span>Completed ({{ completed_tasks }})</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color primary"></div>
+                    <span>In Progress ({{ in_progress_tasks }})</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color warning"></div>
+                    <span>Pending ({{ pending_tasks }})</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tasks Section -->
+            <div class="tasks-section">
+        <div class="section-header">
+            <h2 class="section-title">My Tasks</h2>
+            <div class="task-filter">
+                <button class="filter-button" id="filterButton">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </div>
+        
+        {% if tasks %}
+        <ul class="task-list">
+            {% for task in tasks %}
+            <li class="task-item {{ task.priority|lower }}-priority">
+                <div class="task-header">
+                    <h3 class="task-title">{{ task.title }}</h3>
+                    <div class="task-badges">
+                        {% if task.status == 'pending' %}
+                            <span class="task-badge status-pending">Pending</span>
+                        {% elif task.status == 'in-progress' %}
+                            <span class="task-badge status-in-progress">In Progress</span>
+                        {% else %}
+                            <span class="task-badge status-completed">Completed</span>
+                        {% endif %}
+                        
+                        {% if task.priority == 'high' %}
+                            <span class="task-badge priority-high">High Priority</span>
+                        {% elif task.priority == 'medium' %}
+                            <span class="task-badge priority-medium">Medium Priority</span>
+                        {% else %}
+                            <span class="task-badge priority-low">Low Priority</span>
+                        {% endif %}
+                        
+                        {% if task.category_id %}
+                            <span class="task-badge category">
+                                {% for category in all_categories %}
+                                    {% if category.id == task.category_id %}
+                                        {{ category.name }}
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <p class="task-description">{{ task.description }}</p>
+                
+                <div class="task-footer">
+                    <div class="task-due-date">
+                        <i class="far fa-calendar-alt"></i>
+                        
+                        {% set today = current_date %}
+                        {% if task.is_overdue %}
+                            <span class="overdue">Overdue: {{ task.due_date.strftime('%b %d, %Y') }}</span>
+                        {% elif task.due_date == today %}
+                            <span class="today">Due Today</span>
+                        {% else %}
+                            <span>Due: {{ task.due_date.strftime('%b %d, %Y') }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="task-actions">
+                        {% if task.status != 'completed' %}
+                        <form action="{{ url_for('tasks.complete_task', task_id=task.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="task-btn complete">
+                                <i class="fas fa-check"></i> Complete
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="task-btn edit">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        
+                        <form action="{{ url_for('tasks.delete_task', task_id=task.id) }}" method="post" class="d-inline">
+                            <button type="submit" class="task-btn delete">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="far fa-clipboard"></i>
+            </div>
+            <h3 class="empty-title">No tasks found</h3>
+            <p class="empty-description">Get started by creating your first task</p>
+            <a href="{{ url_for('tasks.add_new_task') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Create Task
+            </a>
+        </div>
+    {% endif %}
+</div>
+    </main>
+</div>
+
+<script>
+    // JavaScript for interactivity (without external dependencies)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sidebar toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+        }
+        
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+            });
+        }
+        
+        // Profile dropdown
+        const profileDropdown = document.getElementById('profileDropdown');
+        const profileMenu = document.getElementById('profileMenu');
+        
+        if (profileDropdown && profileMenu) {
+            profileDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileMenu.classList.toggle('show');
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!profileDropdown.contains(e.target) && !profileMenu.contains(e.target)) {
+                    profileMenu.classList.remove('show');
+                }
+            });
+        }
+        
+        // Filter dropdown (placeholder - would be replaced with actual filter implementation)
+        const filterButton = document.getElementById('filterButton');
+        
+        if (filterButton) {
+            filterButton.addEventListener('click', function() {
+                // Placeholder for filter functionality
+                alert('Filter functionality would appear here');
+            });
+        }
+        
+        // Task animation
+        const taskItems = document.querySelectorAll('.task-item');
+        
+        taskItems.forEach((task, index) => {
+            task.style.animationDelay = (index * 0.05) + 's';
+            task.classList.add('fade-in');
+        });
+        
+        // For demo only: simulate current date for due date comparisons
+        function getCurrentDate() {
+            return new Date();
+        }
+        
+        // Check for overdue tasks and highlight them
+        const dueDates = document.querySelectorAll('.task-due-date');
+        const today = getCurrentDate();
+        today.setHours(0, 0, 0, 0);
+        
+        dueDates.forEach(dateElement => {
+            // This is simplified - in a real app, you'd parse the actual date
+            if (dateElement.classList.contains('overdue')) {
+                const taskItem = dateElement.closest('.task-item');
+                taskItem.style.borderColor = 'var(--danger)';
+            }
+        });
+    });
+
+    // Progress bar animation
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the container that has our data attributes
+        var container = document.querySelector('.progress-container');
+        
+        if (container) {
+            // Get values from data attributes (they're strings)
+            var completedPercent = container.getAttribute('data-completed') || 0;
+            var inProgressPercent = container.getAttribute('data-in-progress') || 0;
+            var pendingPercent = container.getAttribute('data-pending') || 0;
+            
+            // Update percentage text
+            var percentText = document.getElementById('completed-percentage');
+            if (percentText) {
+                percentText.textContent = completedPercent + '% Complete';
+            }
+            
+            // Set progress bar widths
+            var completedBar = document.getElementById('completed-progress');
+            if (completedBar) {
+                completedBar.style.width = completedPercent + '%';
+            }
+            
+            var inProgressBar = document.getElementById('inprogress-progress');
+            if (inProgressBar) {
+                inProgressBar.style.width = inProgressPercent + '%';
+            }
+            
+            var pendingBar = document.getElementById('pending-progress');
+            if (pendingBar) {
+                pendingBar.style.width = pendingPercent + '%';
+            }
+        }
+    });
+    
+</script>
+
+
+{% endblock %}
+
+
+            

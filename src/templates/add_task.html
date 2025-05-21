@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Task - TaskFlow{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styles for the Add Task page */
+    .task-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .form-card {
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .form-card:hover {
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        padding: 25px 30px;
+        color: white;
+    }
+    
+    .form-title {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-title i {
+        margin-right: 12px;
+        font-size: 26px;
+    }
+    
+    .form-subtitle {
+        margin-top: 8px;
+        opacity: 0.9;
+        font-size: 14px;
+    }
+    
+    .form-body {
+        padding: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 25px;
+    }
+    
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--gray-700);
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+    }
+    
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+        outline: none;
+    }
+    
+    .input-group {
+        display: flex;
+        position: relative;
+    }
+    
+    .input-group-text {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        background-color: white;
+        border: 1px solid var(--gray-300);
+        border-right: none;
+        border-radius: 8px 0 0 8px;
+        color: var(--primary-color);
+    }
+    
+    .input-group .form-control {
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .invalid-feedback {
+        color: var(--danger-color);
+        font-size: 13px;
+        margin-top: 5px;
+        display: none;
+    }
+    
+    .was-validated .form-control:invalid ~ .invalid-feedback,
+    .was-validated .form-select:invalid ~ .invalid-feedback {
+        display: block;
+    }
+    
+    .was-validated .form-control:invalid,
+    .was-validated .form-select:invalid {
+        border-color: var(--danger-color);
+    }
+    
+    .form-footer {
+        display: flex;
+        justify-content: space-between;
+        padding: 20px 30px;
+        background-color: var(--gray-100);
+        border-top: 1px solid var(--gray-200);
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        font-size: 15px;
+        border: none;
+    }
+    
+    .btn i {
+        margin-right: 8px;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.25);
+    }
+    
+    .btn-outline-secondary {
+        background-color: transparent;
+        color: var(--gray-700);
+        border: 1px solid var(--gray-300);
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: var(--gray-200);
+    }
+    
+    /* Form field enhancements */
+    .priority-selector {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .priority-option {
+        flex: 1;
+        position: relative;
+    }
+    
+    .priority-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .priority-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 10px;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .priority-option input[type="radio"]:checked + label {
+        border-color: transparent;
+        box-shadow: 0 0 0 2px currentColor;
+    }
+    
+    .priority-option.low label {
+        color: var(--success-color);
+    }
+    
+    .priority-option.medium label {
+        color: var(--warning-color);
+    }
+    
+    .priority-option.high label {
+        color: var(--danger-color);
+    }
+    
+    .priority-icon {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    
+    .priority-name {
+        font-weight: 500;
+    }
+    
+    /* Date Picker enhancement */
+    .date-picker-wrapper {
+        position: relative;
+    }
+    
+    .date-picker-wrapper i {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-500);
+        pointer-events: none;
+    }
+    
+    /* Status selector */
+    .status-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+    
+    .status-option {
+        flex: 1;
+        position: relative;
+    }
+    
+    .status-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .status-option label {
+        display: block;
+        padding: 10px 15px;
+        text-align: center;
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+    
+    .status-option.pending input[type="radio"]:checked + label {
+        background-color: var(--warning-color);
+        color: white;
+        border-color: var(--warning-color);
+    }
+    
+    .status-option.in-progress input[type="radio"]:checked + label {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .status-option.completed input[type="radio"]:checked + label {
+        background-color: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+    }
+    
+    /* Form actions */
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        margin-top: 30px;
+    }
+    
+    /* Help text */
+    .form-text {
+        color: var(--gray-600);
+        font-size: 13px;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="task-form-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h2 class="form-title">
+                <i class="fas fa-plus-circle"></i>
+                Add New Task
+            </h2>
+            <p class="form-subtitle">Create a new task to organize your workflow</p>
+        </div>
+        
+        <div class="form-body">
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Task Title -->
+                <div class="form-group">
+                    <label for="title" class="form-label">Task Title</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-tasks"></i>
+                        </span>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="Enter task title" required>
+                    </div>
+                    <div class="invalid-feedback">Please provide a task title</div>
+                </div>
+                
+                <!-- Description -->
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe what needs to be done..."></textarea>
+                    <div class="form-text">Optional: Add details about this task</div>
+                </div>
+                
+                <!-- Status - as Radio Buttons -->
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <div class="status-selector">
+                        <div class="status-option pending">
+                            <input type="radio" id="status-pending" name="status" value="pending" checked>
+                            <label for="status-pending">Pending</label>
+                        </div>
+                        <div class="status-option in-progress">
+                            <input type="radio" id="status-in-progress" name="status" value="in-progress">
+                            <label for="status-in-progress">In Progress</label>
+                        </div>
+                        <div class="status-option completed">
+                            <input type="radio" id="status-completed" name="status" value="completed">
+                            <label for="status-completed">Completed</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Category -->
+                        <div class="form-group">
+                            <label for="category_id" class="form-label">Category</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-tag"></i>
+                                </span>
+                                <select class="form-select" id="category_id" name="category_id">
+                                    <option value="">-- Select Category --</option>
+                                    {% for category in all_categories %}
+                                    <option value="{{ category.id }}">
+                                        {{ category.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-text">Optional: Categorize your task</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <!-- Due Date -->
+                        <div class="form-group">
+                            <label for="due_date" class="form-label">Due Date</label>
+                            <div class="date-picker-wrapper">
+                                <input type="date" class="form-control" id="due_date" name="due_date" required>
+                                <i class="far fa-calendar-alt"></i>
+                            </div>
+                            <div class="invalid-feedback">Please select a due date</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Priority - as Visual Selector -->
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <div class="priority-selector">
+                        <div class="priority-option low">
+                            <input type="radio" id="priority-low" name="priority" value="low">
+                            <label for="priority-low">
+                                <span class="priority-icon"><i class="fas fa-arrow-down"></i></span>
+                                <span class="priority-name">Low</span>
+                            </label>
+                        </div>
+                        <div class="priority-option medium">
+                            <input type="radio" id="priority-medium" name="priority" value="medium" checked>
+                            <label for="priority-medium">
+                                <span class="priority-icon"><i class="fas fa-minus"></i></span>
+                                <span class="priority-name">Medium</span>
+                            </label>
+                        </div>
+                        <div class="priority-option high">
+                            <input type="radio" id="priority-high" name="priority" value="high">
+                            <label for="priority-high">
+                                <span class="priority-icon"><i class="fas fa-arrow-up"></i></span>
+                                <span class="priority-name">High</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="{{ url_for('tasks.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i>Back to Dashboard
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Form validation
+    (function () {
+        'use strict'
+        
+        var forms = document.querySelectorAll('.needs-validation')
+        
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+    
+    // Animation effects
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fade in the form card
+        const formCard = document.querySelector('.form-card');
+        if (formCard) {
+            formCard.style.opacity = 0;
+            formCard.style.transform = 'translateY(20px)';
+            
+            setTimeout(function() {
+                formCard.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                formCard.style.opacity = 1;
+                formCard.style.transform = 'translateY(0)';
+            }, 100);
+        }
+        
+        // Handle priority selection
+        const priorityOptions = document.querySelectorAll('.priority-option input');
+        priorityOptions.forEach(function(option) {
+            option.addEventListener('change', function() {
+                // Add visual feedback
+                const label = this.nextElementSibling;
+                if (label) {
+                    label.classList.add('pulse');
+                    setTimeout(function() {
+                        label.classList.remove('pulse');
+                    }, 300);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

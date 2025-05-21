@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data:;">
+    <title>{% block title %}TaskFlow{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            /* Primary Colors */
+            --primary-color: #4361ee;
+            --primary-light: #4895ef;
+            --primary-dark: #3f37c9;
+            
+            /* Secondary Colors */
+            --secondary-color: #560bad;
+            --secondary-light: #7209b7;
+            --secondary-dark: #480ca8;
+            
+            /* Accent Color */
+            --accent-color: #f72585;
+            
+            /* Neutrals */
+            --light-color: #f8f9fa;
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+            --dark-color: #212529;
+            
+            /* Status Colors */
+            --success-color: #38b000;
+            --warning-color: #ffbe0b;
+            --danger-color: #ff5e5b;
+            --info-color: #4cc9f0;
+            
+            /* Background Colors */
+            --bg-gradient-start: #f5f7fa;
+            --bg-gradient-end: #c3cfe2;
+        }
+
+        /* Apply a more professional background gradient */
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-top: 70px; /* Account for fixed header */
+        }
+
+        /* Reset styles to remove any unwanted navigation elements */
+        body > ul:not(.navbar-nav),
+        body > li,
+        body > nav + ul,
+        .container > ul:not(.navbar-nav),
+        ul:not(.main-nav ul, .mobile-nav ul, .dropdown-menu, .navbar-nav, .task-list) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+       
+
+        /* Main Header Styles */
+        .taskflow-header {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            width: 100%;
+            color: white;
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        /* Logo and Brand */
+        .brand {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform 0.2s ease;
+        }
+
+        .logo:hover {
+            color: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .logo i {
+            font-size: 1.25em;
+            margin-right: 0.5rem;
+        }
+
+        /* Main Navigation */
+        .main-nav ul {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0.5rem;
+        }
+
+        .main-nav .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 0.6rem 1rem;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .main-nav .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-nav .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
+
+        .main-nav .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        /* User Actions */
+        .user-actions {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        /* User Dropdown */
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-dropdown-toggle {
+            background: none;
+            border: none;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .user-dropdown-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 0.75rem;
+        }
+
+        .avatar.large {
+            width: 48px;
+            height: 48px;
+            font-size: 1.25rem;
+        }
+
+        .username {
+            margin-right: 0.5rem;
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            color: #333;
+            padding: 1rem 0;
+            display: none;
+            z-index: 100;
+        }
+
+        .user-dropdown.active .user-dropdown-menu {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-info {
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-details {
+            margin-left: 0.75rem;
+        }
+
+        .user-details .name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .user-details .email {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 0.5rem 0;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1.25rem;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item i {
+            margin-right: 0.75rem;
+            width: 20px;
+            color: #666;
+        }
+
+        .dropdown-item.logout {
+            color: #e63946;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        .dropdown-item.logout:hover {
+            background-color: rgba(230, 57, 70, 0.05);
+        }
+
+        /* Auth Buttons */
+        .auth-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn i {
+            margin-right: 0.5rem;
+        }
+
+        .btn-login {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .btn-login:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-register {
+            background-color: white;
+            color: #4361ee;
+        }
+
+        .btn-register:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            position: fixed;
+            top: 70px;
+            right: -280px;
+            width: 280px;
+            height: calc(100vh - 70px);
+            background-color: white;
+            z-index: 999;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .mobile-nav.active {
+            right: 0;
+        }
+
+        .mobile-nav ul {
+            list-style: none;
+            padding: 1rem 0;
+            margin: 0;
+        }
+
+        .mobile-nav li a,
+        .mobile-nav li button.mobile-logout {
+            display: flex;
+            align-items: center;
+            padding: 0.85rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+            font-size: 0.95rem;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .mobile-nav li a:hover,
+        .mobile-nav li button.mobile-logout:hover {
+            background-color: #f8f9fa;
+        }
+
+        .mobile-nav li i {
+            width: 24px;
+            margin-right: 0.75rem;
+            color: #4361ee;
+        }
+
+        .mobile-nav li.divider {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 0.5rem 0;
+        }
+
+        .mobile-nav li button.mobile-logout {
+            color: #e63946;
+        }
+
+        .mobile-nav li button.mobile-logout i {
+            color: #e63946;
+        }
+
+        /* Overlay for when mobile menu is open */
+        .mobile-nav-overlay {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-nav-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .main-nav {
+                display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .user-dropdown-toggle .username {
+                display: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-container {
+                padding: 0 1rem;
+                height: 64px;
+            }
+            
+            .logo span {
+                display: none;
+            }
+            
+            .logo i {
+                font-size: 1.5rem;
+                margin-right: 0;
+            }
+            
+            .avatar {
+                margin-right: 0;
+            }
+            
+            .auth-buttons {
+                gap: 0.5rem;
+            }
+            
+            .btn {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .mobile-nav {
+                top: 64px;
+                width: 100%;
+                right: -100%;
+            }
+            
+            .mobile-nav-overlay {
+                top: 64px;
+            }
+            
+            body {
+                padding-top: 64px;
+            }
+        }
+
+        /* Toast notification styling */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+        }
+
+        .toast {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            padding: 0;
+            margin-bottom: 15px;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast-header {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .toast-icon {
+            margin-right: 10px;
+            width: 24px;
+            height: 24px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .toast-icon.success { background-color: var(--success-color); }
+        .toast-icon.error { background-color: var(--danger-color); }
+        .toast-icon.warning { background-color: var(--warning-color); }
+        .toast-icon.info { background-color: var(--info-color); }
+
+        .toast-title {
+            font-weight: 600;
+            color: var(--gray-800);
+            flex-grow: 1;
+            font-size: 15px;
+        }
+
+        .toast-close {
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: var(--gray-500);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+        }
+
+        .toast-close:hover {
+            color: var(--gray-700);
+        }
+
+        .toast-body {
+            padding: 12px 15px;
+            font-size: 14px;
+            color: var(--gray-700);
+        }
+
+        .toast-progress {
+            height: 4px;
+            background-color: rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 100%;
+            animation: progress 3000ms linear forwards;
+        }
+
+        .toast-progress-bar.success { background-color: var(--success-color); }
+        .toast-progress-bar.error { background-color: var(--danger-color); }
+        .toast-progress-bar.warning { background-color: var(--warning-color); }
+        .toast-progress-bar.info { background-color: var(--info-color); }
+
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <!-- New TaskFlow Header -->
+    <header class="taskflow-header">
+        <div class="header-container">
+            <!-- Logo and Brand -->
+            <!-- <div class="brand">
+                <a href="{{ url_for('index') }}" class="logo">
+                    <i class="fas fa-tasks"></i>
+                    <span>TaskFlow</span>
+                </a>
+            </div> -->
+            
+            <!-- Main Navigation -->
+            <nav class="main-nav">
+                <ul>
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('tasks.dashboard') }}" class="nav-link {% if request.path == url_for('tasks.dashboard') %}active{% endif %}">
+                            <i class="fas fa-home"></i> Home
+                        </a></li>
+                        <li><a href="{{ url_for('tasks.add_new_task') }}" class="nav-link {% if request.path == url_for('tasks.add_new_task') %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> New Task
+                        </a></li>
+                        <li><a href="{{ url_for('categories.list_categories') }}" class="nav-link {% if request.path.startswith(url_for('categories.list_categories')) %}active{% endif %}">
+                            <i class="fas fa-tags"></i> Categories
+                        </a></li>
+                        <li><a href="{{ url_for('swagger_ui.show') }}" class="nav-link {% if request.path.startswith('/api/docs') %}active{% endif %}" target="_blank">
+                            <i class="fas fa-code"></i> API
+                        </a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('index') }}" class="nav-link {% if request.path == url_for('index') %}active{% endif %}">
+                            <i class="fas fa-home"></i> Home
+                        </a></li>
+                        <li><a href="{{ url_for('swagger_ui.show') }}" class="nav-link {% if request.path.startswith('/api/docs') %}active{% endif %}" target="_blank">
+                            <i class="fas fa-code"></i> API
+                        </a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <!-- User Actions -->
+            <div class="user-actions">
+                {% if current_user.is_authenticated %}
+                    <div class="user-dropdown">
+                        <button class="user-dropdown-toggle">
+                            <div class="avatar">{{ current_user.username[0]|upper }}</div>
+                            <span class="username">{{ current_user.username }}</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-dropdown-menu">
+                            <div class="user-info">
+                                <div class="avatar large">{{ current_user.username[0]|upper }}</div>
+                                <div class="user-details">
+                                    <div class="name">{{ current_user.username }}</div>
+                                    <div class="email">{{ current_user.email_id }}</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-user-cog"></i> Profile Settings
+                            </a>
+                            <a href="#" class="dropdown-item">
+                                <i class="fas fa-bell"></i> Notifications
+                            </a>
+                            <div class="dropdown-divider"></div>
+                            <form action="{{ url_for('auth.logout') }}" method="post">
+                                <button type="submit" class="dropdown-item logout">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="auth-buttons">
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-login">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-register">
+                            <i class="fas fa-user-plus"></i> Register
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation (visible on smaller screens) -->
+    <div class="mobile-nav">
+        <ul>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('tasks.dashboard') }}">
+                    <i class="fas fa-home"></i> Home
+                </a></li>
+                <li><a href="{{ url_for('tasks.add_new_task') }}">
+                    <i class="fas fa-plus-circle"></i> New Task
+                </a></li>
+                <li><a href="{{ url_for('categories.list_categories') }}">
+                    <i class="fas fa-tags"></i> Categories
+                </a></li>
+                <li><a href="#">
+                    <i class="fas fa-code"></i> API
+                </a></li>
+                <li class="divider"></li>
+                <li><a href="#">
+                    <i class="fas fa-user-cog"></i> Profile Settings
+                </a></li>
+                <li><a href="#">
+                    <i class="fas fa-bell"></i> Notifications
+                </a></li>
+                <li>
+                    <form action="{{ url_for('auth.logout') }}" method="post">
+                        <button type="submit" class="mobile-logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </li>
+            {% else %}
+                <li><a href="{{ url_for('index') }}">
+                    <i class="fas fa-home"></i> Home
+                </a></li>
+                <li><a href="#">
+                    <i class="fas fa-code"></i> API
+                </a></li>
+                <li class="divider"></li>
+                <li><a href="{{ url_for('auth.login') }}">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a></li>
+                <li><a href="{{ url_for('auth.register') }}">
+                    <i class="fas fa-user-plus"></i> Register
+                </a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="container mt-4">
+        <!-- Toast notification container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Convert Flask flash messages to toast notifications -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="d-none">
+                    {% for category, message in messages %}
+                        <div class="feedback-message" data-type="{{ category }}" data-message="{{ message }}"></div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-hourglass-half"></i>
+        </div>
+        <h1 class="error-title">Rate Limit Exceeded</h1>
+        <p class="error-description">
+            You've reached the maximum number of requests allowed for this resource. 
+            Please wait a while before trying again.
+        </p>
+        
+        <div class="rate-limit-details">
+            <p><span class="rate-limit-label">Limit:</span> 200 requests per day</p>
+            <p><span class="rate-limit-label">Reset:</span> In approximately <span class="timer-value" id="resetTime">24 hours</span></p>
+        </div>
+        
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn-primary">
+                <i class="fas fa-home"></i> Go Home
+            </a>
+        </div>
+        
+        <div class="timer">
+            You'll be redirected in <span class="timer-value" id="redirectTimer">30</span> seconds
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+    <!-- jQuery (needed for some plugins) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <!-- Flatpickr for date inputs -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <script>
+    // Function to remove any unwanted navigation elements
+    function removeUnwantedNavigation() {
+        // Target specific unwanted navigation elements
+        const unwantedSelectors = [
+            'body > ul:not(.navbar-nav)',
+            'body > li',
+            'nav.navbar ~ ul',
+            '.container > ul:not(.navbar-nav)',
+            'ul.root-nav',
+            'body > .navbar + ul'
+        ];
+        
+        unwantedSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                el.remove();
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Run cleanup function
+        removeUnwantedNavigation();
+        
+        // Initialize date pickers
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            flatpickr(input, {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                showMonths: 1,
+                static: true
+            });
+        });
+        
+        // User dropdown toggle functionality
+        const userDropdownToggle = document.querySelector('.user-dropdown-toggle');
+        const userDropdown = document.querySelector('.user-dropdown');
+        
+        if (userDropdownToggle && userDropdown) {
+            userDropdownToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                userDropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove('active');
+                }
+            });
+        }
+        
+        // Mobile menu toggle functionality
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        const mobileNav = document.querySelector('.mobile-nav');
+        
+        // Create overlay element
+        const overlay = document.createElement('div');
+        overlay.className = 'mobile-nav-overlay';
+        document.body.appendChild(overlay);
+        
+        if (mobileMenuToggle && mobileNav) {
+            mobileMenuToggle.addEventListener('click', function() {
+                mobileNav.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.style.overflow = mobileNav.classList.contains('active') ? 'hidden' : '';
+            });
+            
+            // Close mobile menu when clicking overlay
+            overlay.addEventListener('click', function() {
+                mobileNav.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+        
+        // Process flash messages and display as toasts
+        const feedbackMessages = document.querySelectorAll('.feedback-message');
+        feedbackMessages.forEach(function(messageElement) {
+            const message = messageElement.dataset.message;
+            const type = messageElement.dataset.type || 'success';
+            
+            if (message) {
+                showToast(message, type);
+            }
+        });
+        
+        // Check for message in URL (for redirects)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('message')) {
+            const message = urlParams.get('message');
+            const type = urlParams.get('type') || 'success';
+            showToast(message, type);
+            
+            // Clean up URL (optional)
+            const newUrl = window.location.pathname;
+            history.replaceState({}, document.title, newUrl);
+        }
+        
+        // Form validation
+        (function () {
+            'use strict'
+            
+            var forms = document.querySelectorAll('.needs-validation')
+            
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })();
+        
+        // Use MutationObserver to clean up any dynamically added elements
+        const observer = new MutationObserver(function(mutations) {
+            removeUnwantedNavigation();
+        });
+        
+        // Start observing the body for changes
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'success', title = null, duration = 3000) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        
+        // Set default titles based on type if not provided
+        if (!title) {
+            switch (type) {
+                case 'success': title = 'Success'; break;
+                case 'error': case 'danger': title = 'Error'; type = 'error'; break;
+                case 'warning': title = 'Warning'; break;
+                case 'info': case 'primary': title = 'Information'; type = 'info'; break;
+                default: title = 'Notification';
+            }
+        }
+        
+        // Set appropriate icon based on type
+        let icon = '';
+        switch (type) {
+            case 'success': icon = '<i class="fas fa-check"></i>'; break;
+            case 'error': icon = '<i class="fas fa-times"></i>'; break;
+            case 'warning': icon = '<i class="fas fa-exclamation"></i>'; break;
+            case 'info': icon = '<i class="fas fa-info"></i>'; break;
+            default: icon = '<i class="fas fa-bell"></i>';
+        }
+        
+        toast.innerHTML = `
+            <div class="toast-header">
+                <div class="toast-icon ${type}">${icon}</div>
+                <div class="toast-title">${title}</div>
+                <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+            </div>
+            <div class="toast-body">${message}</div>
+            <div class="toast-progress">
+                <div class="toast-progress-bar ${type}"></div>
+            </div>
+        `;
+        
+        container.appendChild(toast);
+        
+        // Show the toast with animation
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        // Hide and remove the toast after duration
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 400); // Match the CSS transition time
+        }, duration);
+    }
+
+        // Countdown timer for redirect
+        let secondsLeft = 30;
+        const timerElement = document.getElementById('redirectTimer');
+        
+        const countdownInterval = setInterval(function() {
+            secondsLeft--;
+            timerElement.textContent = secondsLeft;
+            
+            if (secondsLeft <= 0) {
+                clearInterval(countdownInterval);
+                window.location.href = "{{ url_for('index') }}";
+            }
+        }, 1000);
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

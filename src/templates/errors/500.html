@@ -1,0 +1,126 @@
+<!-- Create this file at templates/errors/500.html -->
+{% extends 'base.html' %}
+
+{% block title %}Server Error - TaskFlow{% endblock %}
+
+{% block content %}
+<style>
+    .error-container {
+        max-width: 600px;
+        margin: 60px auto;
+        text-align: center;
+        padding: 40px 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+    
+    .error-icon {
+        font-size: 64px;
+        color: var(--danger-color);
+        margin-bottom: 20px;
+    }
+    
+    .error-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 15px;
+    }
+    
+    .error-description {
+        color: var(--gray-600);
+        margin-bottom: 30px;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .error-details {
+        background-color: var(--gray-100);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 30px;
+        text-align: left;
+        font-family: monospace;
+        font-size: 14px;
+        color: var(--gray-700);
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    
+    .error-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
+    }
+    
+    .btn-outline {
+        background-color: transparent;
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-outline:hover {
+        background-color: rgba(67, 97, 238, 0.05);
+        transform: translateY(-2px);
+    }
+    
+    .btn i {
+        margin-right: 8px;
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <h1 class="error-title">Server Error</h1>
+    <p class="error-description">
+        Oops! Something went wrong on our end. Our technical team has been notified 
+        and is working to fix the issue.
+    </p>
+    
+    {% if error_message %}
+    <div class="error-details">
+        {{ error_message }}
+    </div>
+    {% endif %}
+    
+    <div class="error-actions">
+        <a href="{{ url_for('index') }}" class="btn-primary">
+            <i class="fas fa-home"></i> Go Home
+        </a>
+        <button class="btn-outline" onclick="window.location.reload()">
+            <i class="fas fa-redo"></i> Try Again
+        </button>
+    </div>
+</div>
+{% endblock %}

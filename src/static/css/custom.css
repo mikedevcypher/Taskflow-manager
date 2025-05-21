@@ -1,0 +1,301 @@
+:root {
+    /* Primary Colors */
+    --primary-color: #4361ee;
+    --primary-light: #4895ef;
+    --primary-dark: #3f37c9;
+    
+    /* Secondary Colors */
+    --secondary-color: #560bad;
+    --secondary-light: #7209b7;
+    --secondary-dark: #480ca8;
+    
+    /* Accent Color */
+    --accent-color: #f72585;
+    
+    /* Neutrals */
+    --light-color: #f8f9fa;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    --dark-color: #212529;
+    
+    /* Status Colors */
+    --success-color: #38b000;
+    --warning-color: #ffbe0b;
+    --danger-color: #ff5e5b;
+    --info-color: #4cc9f0;
+}
+
+/* General Enhancements */
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.transition {
+    transition: all 0.3s ease;
+}
+
+/* Status Circle */
+.status-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+/* Task Card */
+.task-title {
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+/* Custom Badge Styles */
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Custom Button Styles */
+.btn {
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 0.5rem 1rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.8rem;
+}
+
+/* Custom Card Styles */
+.card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Form Control */
+.form-control, .form-select {
+    border-radius: 8px;
+    padding: 10px 15px;
+    border: 1px solid var(--gray-300);
+    font-size: 0.95rem;
+    color: var(--gray-700);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+}
+
+/* Task Status Badge Styles */
+.status-badge {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.status-badge::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-badge.pending::before {
+    background-color: var(--warning-color);
+}
+
+.status-badge.in-progress::before {
+    background-color: var(--primary-color);
+}
+
+.status-badge.completed::before {
+    background-color: var(--success-color);
+}
+
+/* Navbar Enhancement */
+.navbar {
+    background-color: #fff;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    padding: 1rem 0;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    color: var(--gray-700);
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Card Animations */
+.card-enter {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.card-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+/* Add to custom.css */
+.priority-indicator {
+    width: 4px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.priority-high {
+    background-color: var(--danger-color);
+}
+
+.priority-medium {
+    background-color: var(--warning-color);
+}
+
+.priority-low {
+    background-color: var(--success-color);
+}
+
+.task-card {
+    position: relative;
+    padding-left: 4px;
+}
+
+.avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.error-container {
+        max-width: 600px;
+        margin: 60px auto;
+        text-align: center;
+        padding: 40px 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+    
+    .error-icon {
+        font-size: 64px;
+        color: var(--warning-color);
+        margin-bottom: 20px;
+    }
+    
+    .error-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--gray-800);
+        margin-bottom: 15px;
+    }
+    
+    .error-description {
+        color: var(--gray-600);
+        margin-bottom: 30px;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    .rate-limit-details {
+        background-color: var(--gray-100);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+    
+    .rate-limit-label {
+        font-weight: 500;
+        color: var(--gray-700);
+        margin-right: 6px;
+    }
+    
+    .error-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
+    }
+    
+    .btn-primary i {
+        margin-right: 8px;
+    }
+    
+    .timer {
+        margin-top: 20px;
+        color: var(--gray-600);
+        font-size: 14px;
+    }
+    
+    .timer-value {
+        font-weight: 600;
+        color: var(--gray-700);
+    }
