@@ -12,4 +12,4 @@ EXPOSE 5000
 ENV FLASK_APP=src/main.py
 ENV FLASK_ENV=dev
 
-CMD [ "flask", "run" "--host=0.0.0.0" ]
+CMD [ "flask", "run", "--host=0.0.0.0" ]
