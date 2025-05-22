@@ -1,0 +1,44 @@
+version: 0.2
+
+env:
+  variables:
+    FLASK_ENV: "development"
+    FLASK_APP: "src/main.py"
+    PORT: "5000"
+    REDIS_URL: ""
+    POSTGRES_HOST: ""
+    POSTGRES_PORT: "5432"
+    POSTGRES_USER: "dbadmin"
+    POSTGRES_PASSWORD: ""
+    POSTGRES_DB: "taskmanagerdb"
+    DATABASE_URI: ""
+    SECRET_KEY: ""
+    SLACK_WEBHOOK_URL: ""
+    SLACK_ENABLED: "false"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Docker Hub...
+      - docker login -u {{DOCKER_USERNAME}} -p {{DOCKER_PASSWORD}}
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI
+      - COMMIT_HASH=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - ECR_REPOSITORY_URI={{ECR_REPOSITORY_URI}}
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build -t ${ECR_REPOSITORY_URI}:latest .
+      - docker tag ${ECR_REPOSITORY_URI}:latest ${ECR_REPOSITORY_URI}:${IMAGE_TAG}
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker push ${ECR_REPOSITORY_URI}:latest
+      - docker push ${ECR_REPOSITORY_URI}:${IMAGE_TAG}
+
+artifacts:
+  files:
+    - '**/*'
