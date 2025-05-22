@@ -18,7 +18,7 @@ from flask_compress import Compress
 from flask_talisman import Talisman
 from src.task_management.db import db, init_app as init_db, check_redis
 
-from src.task_management.auth.models import User
+#from src.task_management.auth.models import User
 from src.task_management.auth.routes import auth_bp
 from src.task_management.tasks.routes import task_bp
 
@@ -27,7 +27,7 @@ from src.task_management.integration.slack import SlackNotifier
 from src.task_management.cache.redis_client import cache_data, invalidate_cache, init_redis
 from config.config import config_by_name, get_config
 from flask_login import current_user
-from src.task_management.categories.models import Category
+#from src.task_management.categories.models import Category
 
 
 # Setup logging
@@ -68,6 +68,7 @@ def register_context_processors(app):
     """
     @app.context_processor
     def inject_categories():
+        from src.task_management.categories.models import Category
         if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
             try:
                 return {'all_categories': Category.query.filter_by(user_id=current_user.id).all()}
@@ -81,8 +82,10 @@ def init_database(app):
     Initialize the database with required tables if they don't exist.
     
     """
+    
     with app.app_context():
         app.logger.info("Checking database tables...")
+    
         
         # Check if we need to create tables
         try:
@@ -215,6 +218,15 @@ def init_extensions(app):
     
     # Initialize database and migrations
     init_db(app)
+
+    with app.app_context():
+        # Import models here to ensure they're registered
+        from src.task_management.auth.models import User
+        from src.task_management.tasks.models import Task
+        from src.task_management.categories.models import Category
+        
+        # Ensure all tables exist
+        db.create_all()
     
     # Initialize Redis cache
     init_redis(app)
@@ -227,6 +239,7 @@ def init_extensions(app):
     @login_manager.user_loader
     def load_user(user_id):
         """Reload user object from the user ID stored in the session"""
+        from src.task_management.auth.models import User
         return User.query.get(int(user_id))
         
     @login_manager.unauthorized_handler

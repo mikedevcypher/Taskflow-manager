@@ -10,9 +10,7 @@ import redis
 import os
 import logging
 
-from src.task_management.auth.models import User
-from src.task_management.categories.models import Category
-        
+
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
@@ -71,6 +69,8 @@ def register_commands(app):
     @app.cli.command("seed-db")
     def seed_db():
         """Seed the database with initial data."""
+        from src.task_management.auth.models import User
+        from src.task_management.categories.models import Category
        
         # Create admin user if it doesn't exist
         admin = User.query.filter_by(username="admin").first()

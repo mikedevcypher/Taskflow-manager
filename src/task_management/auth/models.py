@@ -3,13 +3,15 @@
 This model represents users in the TaskFlow application and provides 
 fields for authentication, user roles, and security features.
 """
-from flask_login import UserMixin
 from ..db import db
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import jwt
 import os
 from typing import Optional
+
+
 
 class User(UserMixin, db.Model):
     """
