@@ -47,9 +47,9 @@ A comprehensive, cloud-ready Task Management System built with Flask, featuring 
 
 ## 🏗️ System Architecture
 
-```
-![Image](https://raw.githubusercontent.com/mikedevcypher/Taskflow-manager/main/assets/image.png)
-```
+
+![Image](https://github.com/mikedevcypher/Taskflow-manager/blob/main/assets/task-manager-architectural-diagram.png)
+
 
 ## 🛠️ Technology Stack
 
