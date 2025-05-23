@@ -17,6 +17,7 @@ from flask_limiter.util import get_remote_address
 from flask_compress import Compress
 from flask_talisman import Talisman
 from src.task_management.db import db, init_app as init_db, check_redis
+from sqlalchemy import text
 
 #from src.task_management.auth.models import User
 from src.task_management.auth.routes import auth_bp
@@ -417,12 +418,19 @@ def health_check():
     """
     Health check endpoint for monitoring.
     """
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            db_status = "healthy" if result.scalar() == 1 else "unhealthy"
+    except Exception:
+        db_status = "unhealthy"
+
     health_status = {
         "status": "healthy",
         "version": "1.0.0",
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
-            "database": "healthy" if db.engine.execute("SELECT 1").scalar() == 1 else "unhealthy",
+            "database": db_status,
             "redis": "healthy" if check_redis() else "not configured or unhealthy"
         }
     }
