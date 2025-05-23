@@ -3,22 +3,57 @@ version: '3.8'
 services:
   web:
     build: .
+    container_name: taskflow_web
     environment:
-      FLASK_ENV: development  # 'dev'
+      # Flask Configuration
+      FLASK_ENV: development
       FLASK_APP: src/main.py
+      
+      # Database Configuration
       DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      
+      # Redis Configuration
       REDIS_URL: redis://redis:6379/0
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # Security
       SECRET_KEY: ${SECRET_KEY:-default-secret-key-change-in-production}
-      SLACK_ENABLED: ${SLACK_ENABLED:-false}
+      
+      # Slack Integration
+      SLACK_NOTIFICATIONS_ENABLED: ${SLACK_NOTIFICATIONS_ENABLED:-false}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL:-#task-notifications}
+      
+      # Frontend URL for Slack buttons
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      
+      # JWT Configuration
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      JWT_ACCESS_TOKEN_EXPIRES: ${JWT_ACCESS_TOKEN_EXPIRES:-86400}
+      
+      # Email Configuration (Optional)
+      MAIL_SERVER: ${MAIL_SERVER:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      
+    env_file:
+      - .env
     volumes:
       - .:/app
       - ./logs:/app/logs
     ports:
       - "5000:5000"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: flask run --host=0.0.0.0 --port=5000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -26,37 +61,205 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    restart: unless-stopped
 
   db:
     image: postgres:16
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    container_name: taskflow_db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-taskflow}
+      POSTGRES_USER: ${POSTGRES_USER:-taskflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskflow_user} -d ${POSTGRES_DB:-taskflow}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    restart: unless-stopped
 
   redis:
-    image: redis:6
+    image: redis:6-alpine
+    container_name: taskflow_redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  celery_worker:
+    build: .
+    container_name: taskflow_celery_worker
+    environment:
+      # Flask Configuration
+      FLASK_ENV: development
+      FLASK_APP: src/main.py
+      
+      # Database Configuration
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379/0
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-default-secret-key-change-in-production}
+      
+      # Slack Integration
+      SLACK_NOTIFICATIONS_ENABLED: ${SLACK_NOTIFICATIONS_ENABLED:-false}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL:-#task-notifications}
+      
+      # Frontend URL for Slack buttons
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        celery -A src.task_management.scheduler:celery worker --loglevel=info --concurrency=4
+      "
+    healthcheck:
+      test: ["CMD", "celery", "-A", "src.task_management.scheduler:celery", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  celery_beat:
+    build: .
+    container_name: taskflow_celery_beat
+    environment:
+      # Flask Configuration
+      FLASK_ENV: development
+      FLASK_APP: src/main.py
+      
+      # Database Configuration
+      DATABASE_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379/0
+      
+      # Celery Configuration
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-default-secret-key-change-in-production}
+      
+      # Slack Integration
+      SLACK_NOTIFICATIONS_ENABLED: ${SLACK_NOTIFICATIONS_ENABLED:-false}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
+      SLACK_DEFAULT_CHANNEL: ${SLACK_DEFAULT_CHANNEL:-#task-notifications}
+      
+      # Frontend URL for Slack buttons
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+      - ./celerybeat-schedule:/app/celerybeat-schedule
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for services to be ready...' &&
+        sleep 15 &&
+        celery -A src.task_management.scheduler:celery beat --loglevel=info --schedule=/app/celerybeat-schedule
+      "
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/celerybeat-schedule"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    restart: unless-stopped
+
+  # Optional: Flower for monitoring Celery (useful for development)
+  flower:
+    build: .
+    container_name: taskflow_flower
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      FLOWER_BASIC_AUTH: ${FLOWER_BASIC_AUTH:-admin:password}
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_healthy
+    command: >
+      sh -c "
+        pip install flower &&
+        celery -A src.task_management.scheduler:celery flower --port=5555 --basic_auth=$${FLOWER_BASIC_AUTH}
+      "
+    profiles:
+      - monitoring
+    restart: unless-stopped
+
+networks:
+  default:
+    name: taskflow_network
+    driver: bridge
 
 volumes:
   postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
   redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis
+
+# Health check endpoints for monitoring
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3

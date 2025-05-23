@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import jwt
 import os
 from typing import Optional
-
+from datetime import datetime
 
 
 class User(UserMixin, db.Model):
@@ -28,7 +28,14 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime)
     role = db.Column(db.String(20), default="user")  # Options: admin, manager, user
     is_active = db.Column(db.Boolean, default=True)
-    
+    # Slack integration fields
+    slack_user_id = db.Column(db.String(50), nullable=True)
+    slack_notifications_enabled = db.Column(db.Boolean, default=False)
+    # Notification preferences
+    notify_task_assignments = db.Column(db.Boolean, default=True)
+    notify_due_dates = db.Column(db.Boolean, default=True)
+    notify_completions = db.Column(db.Boolean, default=True)
+    notify_daily_summary = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         """

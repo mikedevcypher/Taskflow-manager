@@ -70,6 +70,15 @@ class Config(object):
     SLACK_API_TOKEN = os.getenv('SLACK_API_TOKEN', '')
     SLACK_CHANNEL = os.getenv('SLACK_CHANNEL', '#task-notifications')
     
+     # Slack Integration Settings
+    SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
+    SLACK_WEBHOOK_URL = os.environ.get('SLACK_WEBHOOK_URL')
+    SLACK_SIGNING_SECRET = os.environ.get('SLACK_SIGNING_SECRET')
+    SLACK_DEFAULT_CHANNEL = os.environ.get('SLACK_DEFAULT_CHANNEL', '#task-notifications')
+    
+    # Frontend URL for Slack buttons
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    
 
     
     # File upload settings

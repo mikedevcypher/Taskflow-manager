@@ -2,26 +2,26 @@
 """
 This module handles task management routes for the TaskFlow application.
 It supports adding, viewing, editing, deleting, and categorizing tasks,
-with both web UI and API endpoints.
+with both web UI and API endpoints, enhanced with Slack notifications.
 """
 from datetime import datetime
-from flask import Flask,Blueprint, request, jsonify, flash, redirect, render_template, url_for, make_response, current_app
+from flask import Flask, Blueprint, request, jsonify, flash, redirect, render_template, url_for, make_response, current_app
 from flask_login import login_required, current_user
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import desc
 from .models import Task
 from src.task_management.categories.models import Category
 from src.task_management.auth.routes import token_required
+from src.task_management.auth.models import User
 from src.task_management.db import db, optimize_query
 from src.task_management.cache.redis_client import cache_data, invalidate_cache
-from datetime import datetime
+from src.task_management.integration.slack import SlackService
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask_login import current_user
-
 
 task_bp = Blueprint('tasks', __name__)
- 
+
 def limit_route(limit_string):
     """Helper function to apply rate limits without circular imports"""
     def decorator(f):
@@ -30,8 +30,6 @@ def limit_route(limit_string):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # Check if the current app has a rate limiter
-           
-            
             # Look for the limiter instance in extensions
             limiter = None
             for extension in current_app.extensions.values():
@@ -51,6 +49,21 @@ def limit_route(limit_string):
         return decorated_function
     return decorator
 
+def send_slack_notification(notification_type, task, user, **kwargs):
+    """Helper function to send Slack notifications with async processing"""
+    try:
+        if not current_app.config.get('SLACK_NOTIFICATIONS_ENABLED', False):
+            return
+        
+        # Use async notification scheduling for better performance
+        from src.task_management.integration.slack import schedule_async_notification
+        schedule_async_notification(notification_type, task, user, **kwargs)
+        
+        current_app.logger.info(f"Scheduled {notification_type} notification for task {task.id}")
+        
+    except Exception as e:
+        current_app.logger.error(f"Failed to schedule Slack notification: {e}")
+        # Don't fail the main operation if Slack notification fails
 
 # Web UI Routes
 @task_bp.route('/dashboard', methods=['GET'])
@@ -59,7 +72,6 @@ def limit_route(limit_string):
 def dashboard():
     """
     Display the task dashboard with filtered tasks based on query parameters.
-    
     """
     # Get filter parameters
     status = request.args.get('status')
@@ -145,7 +157,7 @@ def dashboard():
 @task_bp.route('/add_task', methods=['GET', 'POST'])
 @login_required
 def add_new_task():
-    """Handle adding/creating new tasks with category support."""
+    """Handle adding/creating new tasks with category support and Slack notifications."""
     # Get all categories for the dropdown
     categories = Category.query.filter_by(user_id=current_user.id).all()
     # Create Uncategorized category if it doesn't exist
@@ -168,6 +180,7 @@ def add_new_task():
         priority = request.form.get('priority', 'medium')
         status = request.form.get('status', 'pending')
         category_id = request.form.get('category_id')
+        assigned_to_id = request.form.get('assigned_to_id', current_user.id)
         
         # Validate required fields
         if not title or not due_date_str:
@@ -186,6 +199,8 @@ def add_new_task():
                 priority=priority,
                 status=status,
                 user_id=current_user.id,
+                created_by_id=current_user.id,
+                assigned_to_id=assigned_to_id,
                 category_id=category_id if category_id else None
             )
             
@@ -195,9 +210,13 @@ def add_new_task():
             # Invalidate cache
             invalidate_cache(f'user_tasks_{current_user.id}')
             
-            # Send Slack notification if enabled
-            if current_app.config.get('SLACK_ENABLED', False) and hasattr(current_app, 'slack_notifier'):
-                current_app.slack_notifier.notify_task_created(new_task, current_user)
+            # Send Slack notifications
+            send_slack_notification('task_created', new_task, current_user)
+            
+            # If assigned to someone else, notify them
+            if int(assigned_to_id) != current_user.id:
+                assigned_user = User.query.get(assigned_to_id)
+                send_slack_notification('task_assigned', new_task, current_user, assigned_user=assigned_user)
             
             flash("Task added successfully", "success")
             return redirect(url_for('tasks.dashboard'))
@@ -211,7 +230,7 @@ def add_new_task():
 @task_bp.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
 @login_required
 def edit_task(task_id):
-    """Edit an existing task."""
+    """Edit an existing task with change tracking and Slack notifications."""
     # Get the task
     task = Task.query.filter_by(id=task_id, user_id=current_user.id).first_or_404()
     
@@ -225,6 +244,7 @@ def edit_task(task_id):
         priority = request.form.get('priority')
         status = request.form.get('status')
         category_id = request.form.get('category_id')
+        assigned_to_id = request.form.get('assigned_to_id')
         
         # Validate required fields
         if not title or not due_date_str:
@@ -232,19 +252,58 @@ def edit_task(task_id):
             return render_template('edit_task.html', task=task, categories=categories)
         
         try:
+            # Track changes for Slack notification
+            changes = {}
+            
+            if title != task.title:
+                changes['title'] = (task.title, title)
+            
+            if description != (task.description or ''):
+                changes['description'] = (task.description or 'None', description)
+            
+            if priority != task.priority:
+                changes['priority'] = (task.priority, priority)
+            
+            new_due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+            if new_due_date.date() != task.due_date.date():
+                changes['due_date'] = (task.due_date.strftime('%Y-%m-%d'), new_due_date.strftime('%Y-%m-%d'))
+            
+            # Check for assignment changes
+            old_assigned_to_id = task.assigned_to_id or task.user_id
+            new_assigned_to_id = int(assigned_to_id) if assigned_to_id else task.user_id
+            
+            if new_assigned_to_id != old_assigned_to_id:
+                old_assignee = User.query.get(old_assigned_to_id)
+                new_assignee = User.query.get(new_assigned_to_id)
+                changes['assigned_to'] = (
+                    old_assignee.username if old_assignee else 'Unassigned',
+                    new_assignee.username if new_assignee else 'Unassigned'
+                )
+            
             # Update task fields
             task.title = title
             task.description = description
-            task.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+            task.due_date = new_due_date
             task.priority = priority
             task.status = status
             task.category_id = category_id if category_id else None
+            task.assigned_to_id = new_assigned_to_id
+            task.updated_at = datetime.utcnow()
             
             db.session.commit()
             
             # Invalidate cache
             invalidate_cache(f'user_tasks_{current_user.id}')
             invalidate_cache(f'task_{task_id}')
+            
+            # Send Slack notifications
+            if changes:
+                send_slack_notification('task_updated', task, current_user, changes=changes)
+            
+            # If assignment changed, notify new assignee
+            if new_assigned_to_id != old_assigned_to_id:
+                new_assignee = User.query.get(new_assigned_to_id)
+                send_slack_notification('task_assigned', task, current_user, assigned_user=new_assignee)
             
             flash("Task updated successfully", "success")
             return redirect(url_for('tasks.dashboard'))
@@ -279,11 +338,14 @@ def delete_task(task_id):
 @task_bp.route('/complete_task/<int:task_id>', methods=['GET','POST'])
 @login_required
 def complete_task(task_id):
-    """Mark a task as completed."""
+    """Mark a task as completed with Slack notification."""
     task = Task.query.filter_by(id=task_id, user_id=current_user.id).first_or_404()
     
     try:
+        old_status = task.status
         task.status = 'completed'
+        task.completed_at = datetime.utcnow()
+        task.completed_by_id = current_user.id
         task.updated_at = datetime.utcnow()
         db.session.commit()
         
@@ -291,9 +353,14 @@ def complete_task(task_id):
         invalidate_cache(f'user_tasks_{current_user.id}')
         invalidate_cache(f'task_{task_id}')
         
-        # Send Slack notification if enabled
-        if current_app.config.get('SLACK_ENABLED', False) and hasattr(current_app, 'slack_notifier'):
-            current_app.slack_notifier.notify_task_completed(task, current_user)
+        # Send Slack notification
+        send_slack_notification('task_completed', task, current_user)
+        
+        # Notify task creator if different from completer
+        if hasattr(task, 'created_by_id') and task.created_by_id and task.created_by_id != current_user.id:
+            creator = User.query.get(task.created_by_id)
+            if creator and getattr(creator, 'slack_notifications_enabled', False) and getattr(creator, 'notify_completions', True):
+                send_slack_notification('task_completed', task, current_user)
         
         flash("Task marked as completed", "success")
     except Exception as e:
@@ -302,14 +369,19 @@ def complete_task(task_id):
     
     return redirect(url_for('tasks.dashboard'))
 
-# API Routes
+# API Routes with JWT Authentication
 @task_bp.route('/api/tasks', methods=['GET'])
-@token_required
-def api_get_tasks(current_user):
+@jwt_required()
+def api_get_tasks():
     """
     Get all tasks for the authenticated user with filtering, sorting, and pagination.
-    
     """
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user:
+        return jsonify({"error": "User not found"}), 404
+    
     # Get request parameters
     status = request.args.get('status')
     priority = request.args.get('priority')
@@ -367,12 +439,17 @@ def api_get_tasks(current_user):
     return jsonify(get_tasks()), 200
 
 @task_bp.route('/api/tasks', methods=['POST'])
-@token_required
-def api_create_task(current_user):
+@jwt_required()
+def api_create_task():
     """
-    Create a new task.
+    Create a new task with Slack notification.
+    """
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
     
-    """
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
     data = request.get_json()
     
     # Validate required fields
@@ -387,7 +464,9 @@ def api_create_task(current_user):
             due_date=datetime.fromisoformat(data.get('due_date').replace('Z', '+00:00')),
             priority=data.get('priority', 'medium'),
             status=data.get('status', 'pending'),
-            user_id=current_user.id,
+            user_id=user.id,
+            created_by_id=user.id,
+            assigned_to_id=data.get('assigned_to_id', user.id),
             category_id=data.get('category_id')
         )
         
@@ -395,16 +474,21 @@ def api_create_task(current_user):
         db.session.commit()
         
         # Invalidate cache
-        invalidate_cache(f'user_tasks_{current_user.id}')
+        invalidate_cache(f'user_tasks_{user.id}')
         
-        # Send Slack notification if enabled
-        if current_app.config.get('SLACK_ENABLED', False) and hasattr(current_app, 'slack_notifier'):
-            current_app.slack_notifier.notify_task_created(new_task, current_user)
+        # Send Slack notifications
+        send_slack_notification('task_created', new_task, user)
+        
+        # If assigned to someone else, notify them
+        if new_task.assigned_to_id != user.id:
+            assigned_user = User.query.get(new_task.assigned_to_id)
+            send_slack_notification('task_assigned', new_task, user, assigned_user=assigned_user)
         
         return jsonify({
             "message": "Task created successfully",
             "task": new_task.to_dict()
         }), 201
+        
     except ValueError:
         return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DDTHH:MM:SS)"}), 400
     except SQLAlchemyError as e:
@@ -415,13 +499,19 @@ def api_create_task(current_user):
         return jsonify({"error": f"Error creating task: {str(e)}"}), 500
 
 @task_bp.route('/api/tasks/<int:task_id>', methods=['GET'])
-@token_required
-def api_get_task(current_user, task_id):
+@jwt_required()
+def api_get_task(task_id):
     """Get a specific task by ID."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
     # Try to get from cache first
     @cache_data(f'task_{task_id}', expire=300)
     def get_task():
-        task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+        task = Task.query.filter_by(id=task_id, user_id=user.id).first()
         if not task:
             return None
         return {"task": task.to_dict()}
@@ -433,12 +523,18 @@ def api_get_task(current_user, task_id):
     return jsonify(result), 200
 
 @task_bp.route('/api/tasks/<int:task_id>', methods=['PUT'])
-@token_required
-def api_update_task(current_user, task_id):
+@jwt_required()
+def api_update_task(task_id):
     """
-    Update a specific task.
+    Update a specific task with change tracking and Slack notification.
     """
-    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    task = Task.query.filter_by(id=task_id, user_id=user.id).first()
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
@@ -447,31 +543,69 @@ def api_update_task(current_user, task_id):
         return jsonify({"error": "No update data provided"}), 400
     
     try:
-        # Update fields if provided
-        if 'title' in data:
+        # Track changes for notification
+        changes = {}
+        
+        # Update fields if provided and track changes
+        if 'title' in data and data['title'] != task.title:
+            changes['title'] = (task.title, data['title'])
             task.title = data['title']
-        if 'description' in data:
+        
+        if 'description' in data and data['description'] != (task.description or ''):
+            changes['description'] = (task.description or 'None', data['description'])
             task.description = data['description']
-        if 'due_date' in data:
-            task.due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
-        if 'priority' in data:
+        
+        if 'priority' in data and data['priority'] != task.priority:
+            changes['priority'] = (task.priority, data['priority'])
             task.priority = data['priority']
-        if 'status' in data:
+        
+        if 'due_date' in data:
+            new_due_date = datetime.fromisoformat(data['due_date'].replace('Z', '+00:00'))
+            if new_due_date != task.due_date:
+                changes['due_date'] = (str(task.due_date), str(new_due_date))
+                task.due_date = new_due_date
+        
+        if 'status' in data and data['status'] != task.status:
+            changes['status'] = (task.status, data['status'])
             task.status = data['status']
-        if 'category_id' in data:
+        
+        if 'category_id' in data and data['category_id'] != task.category_id:
+            changes['category_id'] = (task.category_id, data['category_id'])
             task.category_id = data['category_id']
+        
+        if 'assigned_to_id' in data and data['assigned_to_id'] != task.assigned_to_id:
+            old_assignee = User.query.get(task.assigned_to_id) if task.assigned_to_id else None
+            new_assignee = User.query.get(data['assigned_to_id'])
+            changes['assigned_to'] = (
+                old_assignee.username if old_assignee else 'Unassigned',
+                new_assignee.username if new_assignee else 'Unassigned'
+            )
+            
+            # Store old assignee for notification
+            old_assigned_to_id = task.assigned_to_id
+            task.assigned_to_id = data['assigned_to_id']
+            
+            # Send assignment notification to new assignee
+            if new_assignee:
+                send_slack_notification('task_assigned', task, user, assigned_user=new_assignee)
         
         task.updated_at = datetime.utcnow()
         db.session.commit()
         
         # Invalidate cache
-        invalidate_cache(f'user_tasks_{current_user.id}')
+        invalidate_cache(f'user_tasks_{user.id}')
         invalidate_cache(f'task_{task_id}')
+        
+        # Send update notification if there were changes
+        if changes:
+            send_slack_notification('task_updated', task, user, changes=changes)
         
         return jsonify({
             "message": "Task updated successfully",
-            "task": task.to_dict()
+            "task": task.to_dict(),
+            "changes": changes
         }), 200
+        
     except ValueError:
         return jsonify({"error": "Invalid date format. Use ISO format (YYYY-MM-DDTHH:MM:SS)"}), 400
     except SQLAlchemyError as e:
@@ -482,10 +616,16 @@ def api_update_task(current_user, task_id):
         return jsonify({"error": f"Error updating task: {str(e)}"}), 500
 
 @task_bp.route('/api/tasks/<int:task_id>', methods=['DELETE'])
-@token_required
-def api_delete_task(current_user, task_id):
+@jwt_required()
+def api_delete_task(task_id):
     """Delete a specific task."""
-    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    task = Task.query.filter_by(id=task_id, user_id=user.id).first()
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
@@ -494,7 +634,7 @@ def api_delete_task(current_user, task_id):
         db.session.commit()
         
         # Invalidate cache
-        invalidate_cache(f'user_tasks_{current_user.id}')
+        invalidate_cache(f'user_tasks_{user.id}')
         invalidate_cache(f'task_{task_id}')
         
         return jsonify({"message": "Task deleted successfully"}), 200
@@ -505,34 +645,65 @@ def api_delete_task(current_user, task_id):
         db.session.rollback()
         return jsonify({"error": f"Error deleting task: {str(e)}"}), 500
 
-@task_bp.route('/api/tasks/<int:task_id>/complete', methods=['POST'])
-@token_required
-def api_complete_task(current_user, task_id):
-    """Mark a task as completed."""
-    task = Task.query.filter_by(id=task_id, user_id=current_user.id).first()
+@task_bp.route('/api/tasks/<int:task_id>/complete', methods=['PUT'])
+@jwt_required()
+def api_complete_task(task_id):
+    """Mark task as complete with Slack notification."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    task = Task.query.filter_by(id=task_id, user_id=user.id).first()
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
+    # Check permissions
+    if task.assigned_to_id and task.assigned_to_id != user.id and task.user_id != user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    
     try:
+        old_status = task.status
         task.status = 'completed'
+        task.completed_at = datetime.utcnow()
+        task.completed_by_id = user.id
         task.updated_at = datetime.utcnow()
+        
         db.session.commit()
         
         # Invalidate cache
-        invalidate_cache(f'user_tasks_{current_user.id}')
+        invalidate_cache(f'user_tasks_{user.id}')
         invalidate_cache(f'task_{task_id}')
         
-        # Send Slack notification if enabled
-        if current_app.config.get('SLACK_ENABLED', False) and hasattr(current_app, 'slack_notifier'):
-            current_app.slack_notifier.notify_task_completed(task, current_user)
+        # Send Slack notification
+        send_slack_notification('task_completed', task, user)
+        
+        # Notify task creator if different from completer
+        if hasattr(task, 'created_by_id') and task.created_by_id and task.created_by_id != user.id:
+            creator = User.query.get(task.created_by_id)
+            if creator and getattr(creator, 'slack_notifications_enabled', False) and getattr(creator, 'notify_completions', True):
+                send_slack_notification('task_completed', task, user)
         
         return jsonify({
-            "message": "Task marked as completed",
+            "message": "Task completed successfully",
             "task": task.to_dict()
-        }), 200
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        return jsonify({"error": f"Database error: {str(e)}"}), 500
+        })
+        
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": f"Error completing task: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
+
+# Legacy API routes with token_required decorator for backward compatibility
+@task_bp.route('/api/tasks/legacy', methods=['GET'])
+@token_required
+def api_get_tasks_legacy(current_user):
+    """Legacy API endpoint for backward compatibility"""
+    # Redirect to new JWT endpoint logic but with token_required
+    return jsonify({"message": "Please use JWT authentication endpoints"}), 301
+
+@task_bp.route('/api/tasks/legacy', methods=['POST'])
+@token_required
+def api_create_task_legacy(current_user):
+    """Legacy API endpoint for backward compatibility"""
+    return jsonify({"message": "Please use JWT authentication endpoints"}), 301

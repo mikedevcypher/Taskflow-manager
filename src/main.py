@@ -17,16 +17,18 @@ from flask_limiter.util import get_remote_address
 from flask_compress import Compress
 from flask_talisman import Talisman
 from src.task_management.db import db, init_app as init_db, check_redis
+from src.task_management.scheduler import create_celery_app
+from sqlalchemy import text
 
 #from src.task_management.auth.models import User
 from src.task_management.auth.routes import auth_bp
 from src.task_management.tasks.routes import task_bp
 
 from src.task_management.categories.views import categories_bp
-from src.task_management.integration.slack import SlackNotifier
 from src.task_management.cache.redis_client import cache_data, invalidate_cache, init_redis
 from config.config import config_by_name, get_config
 from flask_login import current_user
+from src.task_management.integration.routes import integrations_bp
 #from src.task_management.categories.models import Category
 
 
@@ -253,10 +255,9 @@ def init_extensions(app):
             return redirect(url_for('auth.login'))
     
     # Initialize Slack notifier if enabled
-    if app.config.get('SLACK_ENABLED', False):
-        app.slack_notifier = SlackNotifier(app.config.get('SLACK_WEBHOOK_URL', ''))
-        app.logger.info("Slack notifications enabled")
-    
+    if app.config.get('SLACK_NOTIFICATIONS_ENABLED', False):
+        app.celery = create_celery_app(app)
+        app.logger.info("Slack notifications and Celery background tasks enabled")
     # Initialize Flask-Compress for response compression
     Compress(app)
     
@@ -334,6 +335,8 @@ def register_blueprints(app):
     app.register_blueprint(auth_bp, url_prefix='/api/auth', name='auth_api')
     app.register_blueprint(task_bp, url_prefix='/api/tasks', name='tasks_api')
     app.register_blueprint(categories_bp, url_prefix='/api/categories', name='categories_api')
+    
+    app.register_blueprint(integrations_bp)
 def register_middlewares(app):
     """
     Register middleware functions.
@@ -417,12 +420,19 @@ def health_check():
     """
     Health check endpoint for monitoring.
     """
+    try:
+        with db.engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))
+            db_status = "healthy" if result.scalar() == 1 else "unhealthy"
+    except Exception:
+        db_status = "unhealthy"
+
     health_status = {
         "status": "healthy",
         "version": "1.0.0",
         "timestamp": datetime.utcnow().isoformat(),
         "services": {
-            "database": "healthy" if db.engine.execute("SELECT 1").scalar() == 1 else "unhealthy",
+            "database": db_status,
             "redis": "healthy" if check_redis() else "not configured or unhealthy"
         }
     }

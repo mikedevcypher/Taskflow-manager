@@ -3347,3 +3347,195 @@ RuntimeError: The current Flask app is not registered with this 'SQLAlchemy' ins
 2025-05-22 16:36:37,797 DEBUG: API Request: GET /api/docs/swagger-ui-bundle.js [in /app/src/main.py:347]
 2025-05-22 16:36:37,807 DEBUG: API Request: GET /api/docs/swagger-ui-standalone-preset.js [in /app/src/main.py:347]
 2025-05-22 16:36:43,571 WARNING: Rate limiter not found in extensions [in /app/src/task_management/tasks/routes.py:44]
+2025-05-23 16:01:00,300 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:01:26,979 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:01:46,091 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:02:08,892 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:02:28,978 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:02:45,005 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:02:57,587 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:03:16,101 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:03:41,656 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:04:18,544 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:05:47,397 INFO: TaskFlow startup [in /app/src/main.py:211]
+2025-05-23 16:05:48,645 INFO: Checking database tables... [in /app/src/main.py:88]
+2025-05-23 16:05:48,672 INFO: Database tables already exist. [in /app/src/main.py:102]
+2025-05-23 16:06:04,396 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:06:04,445 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:06:36,339 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:06:36,348 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:07:07,461 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:07:07,547 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:07:38,270 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:07:38,280 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:08:09,624 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:08:09,664 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:08:40,872 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:08:41,045 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:09:12,254 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:09:12,363 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:09:43,858 ERROR: Exception on /health [GET] [in /usr/local/lib/python3.12/site-packages/flask/app.py:1414]
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 2190, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1486, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask_cors/extension.py", line 165, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1484, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/flask/app.py", line 1469, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/src/main.py", line 427, in health_check
+    "database": "healthy" if db.engine.execute(db.text("SELECT 1")).scalar() == 1 else "unhealthy",
+                             ^^^^^^^^^^^^^^^^^
+AttributeError: 'Engine' object has no attribute 'execute'
+2025-05-23 16:09:44,034 ERROR: Server Error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application. [in /app/src/main.py:318]
+2025-05-23 16:59:06,862 INFO: TaskFlow startup [in /app/src/main.py:212]
+2025-05-23 16:59:07,184 INFO: Checking database tables... [in /app/src/main.py:89]
+2025-05-23 16:59:07,194 INFO: Database tables already exist. [in /app/src/main.py:103]
